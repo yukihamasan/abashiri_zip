@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <link rel="icon" href="favicon.png">
+    <link rel="icon" href="favicon.png" type="image/png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>網走郵便番号ナビ</title>
@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="網走郵便">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/7124/7124723.png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <meta name="theme-color" content="#0284c7">
 
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -46,13 +46,15 @@
             background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; 
             border-radius: 50px; display: none; z-index: 1000;
         }
+        /* アイコン画像のスタイルを追加 */
+        .app-icon { width: 80px; height: 80px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <i class="material-icons-round" style="font-size: 50px;">verified</i>
+        <img src="favicon.png" alt="カニアイコン" class="app-icon">
         <h1 style="margin:10px 0 0; font-size: 1.6rem;">網走市 郵便番号</h1>
         <p style="margin:5px 0 0; font-size:0.85rem; opacity:0.9;">公式データ同期・自動検索</p>
     </div>
@@ -89,12 +91,10 @@
         const ui = document.getElementById('ui');
 
         try {
-            // HeartRails APIを使用して最新データを取得
             const response = await fetch('https://geoapi.heartrails.com/api/json?method=getTowns&city=%E7%B6%B2%E8%B5%B0%E5%B8%82');
             const data = await response.json();
             let towns = data.response.location;
 
-            // 五十音順に並べ替え
             towns.sort((a, b) => a.town.localeCompare(b.town, 'ja'));
 
             select.innerHTML = '<option value="">▼ 町名を選択</option>';
