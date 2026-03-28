@@ -90,15 +90,31 @@
         const loader = document.getElementById('loader');
         const ui = document.getElementById('ui');
 
+        // 漢数字を数字に変換する辞書
+        const kanjiMap = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+
         try {
-            // ハートレイルズAPIから網走市のデータを取得
             const response = await fetch('https://geoapi.heartrails.com/api/json?method=getTowns&city=%E7%B6%B2%E8%B5%B0%E5%B8%82');
             const data = await response.json();
             let towns = data.response.location;
 
-            // 【改良ポイント】あいうえお順 ＋ 数字（条数）の昇順に並べ替え
+            // 【改良ポイント】漢数字を考慮した並べ替え
             towns.sort((a, b) => {
-                return a.town.localeCompare(b.town, 'ja', { numeric: true });
+                // 町名から漢数字を探して数字に置き換える関数
+                const getSortKey = (str) => {
+                    let res = str;
+                    for (let key in kanjiMap) {
+                        // 「十」の後の「一」などを考慮し、漢数字を数字に置換
+                        res = res.replace(new RegExp(key, 'g'), kanjiMap[key]);
+                    }
+                    return res;
+                };
+
+                const keyA = getSortKey(a.town);
+                const keyB = getSortKey(b.town);
+
+                // 数字として比較（numeric: true で 2条 < 10条 になる）
+                return keyA.localeCompare(keyB, 'ja', { numeric: true });
             });
 
             select.innerHTML = '<option value="">▼ 町名を選択（あいうえお順）</option>';
@@ -112,7 +128,7 @@
             loader.style.display = 'none';
             ui.style.display = 'block';
         } catch (error) {
-            loader.innerHTML = '<p style="color:red;">データ取得に失敗しました。<br>再読み込みしてください。</p>';
+            loader.innerHTML = '<p style="color:red;">データ取得に失敗しました。</p>';
         }
     };
 
