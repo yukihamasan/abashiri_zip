@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>網走郵便番号ナビ</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="網走郵便">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/7124/7124723.png">
+    <meta name="theme-color" content="#0284c7">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        :root { --primary: #0284c7; --bg: #f1f5f9; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); display: flex; justify-content: center; margin: 0; }
+        .container { width: 100%; max-width: 500px; background: white; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: var(--primary); color: white; padding: 40px 20px 30px; text-align: center; }
+        .content { padding: 25px; flex-grow: 1; }
+        .loading { text-align: center; color: #64748b; padding: 40px; }
+        .label { display: block; margin-bottom: 12px; color: #64748b; font-weight: bold; font-size: 0.9rem; }
+        select { 
+            width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 16px; 
+            font-size: 1.1rem; background: #fff; cursor: pointer; appearance: none;
+        }
+        .select-wrapper { position: relative; }
+        .select-wrapper::after {
+            content: "expand_more"; font-family: 'Material Icons Round';
+            position: absolute; right: 15px; top: 18px; color: #94a3b8; pointer-events: none;
+        }
+        .result-card { 
+            margin-top: 40px; padding: 35px 20px; border-radius: 24px; 
+            background: #f0f9ff; border: 1px solid #bae6fd; text-align: center;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+        }
+        .zip-code { font-size: 3.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; letter-spacing: -2px; }
+        .copy-btn { 
+            background: var(--primary); color: white; padding: 12px 30px; 
+            border-radius: 50px; border: none; font-weight: bold; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+        }
+        .toast { 
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; 
+            border-radius: 50px; display: none; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <i class="material-icons-round" style="font-size: 50px;">verified</i>
+        <h1 style="margin:10px 0 0; font-size: 1.6rem;">網走市 郵便番号</h1>
+        <p style="margin:5px 0 0; font-size:0.85rem; opacity:0.9;">公式データ同期・自動検索</p>
+    </div>
+
+    <div class="content">
+        <div id="loader" class="loading">
+            <div style="font-size: 2rem; margin-bottom: 10px;">❄️</div>
+            最新の網走市データを取得中...
+        </div>
+        
+        <div id="ui" style="display:none;">
+            <label class="label">町名（住所）を選んでください</label>
+            <div class="select-wrapper">
+                <select id="addressSelect" onchange="updateZip()"></select>
+            </div>
+
+            <div class="result-card">
+                <div style="color: #64748b; font-size: 0.9rem; font-weight: bold;">POSTAL CODE</div>
+                <div id="zipOutput" class="zip-code">〒--- ----</div>
+                <button class="copy-btn" onclick="copyZip()">
+                    <i class="material-icons-round">content_copy</i>番号をコピー
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast">コピーしました！</div>
+
+<script>
+    window.onload = async function() {
+        const select = document.getElementById('addressSelect');
+        const loader = document.getElementById('loader');
+        const ui = document.getElementById('ui');
+
+        try {
+            // HeartRails APIを使用して最新データを取得
+            const response = await fetch('https://geoapi.heartrails.com/api/json?method=getTowns&city=%E7%B6%B2%E8%B5%B0%E5%B8%82');
+            const data = await response.json();
+            let towns = data.response.location;
+
+            // 五十音順に並べ替え
+            towns.sort((a, b) => a.town.localeCompare(b.town, 'ja'));
+
+            select.innerHTML = '<option value="">▼ 町名を選択</option>';
+            towns.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.postal;
+                opt.textContent = item.town;
+                select.appendChild(opt);
+            });
+
+            loader.style.display = 'none';
+            ui.style.display = 'block';
+        } catch (error) {
+            loader.innerHTML = '<p style="color:red;">通信エラーが発生しました。<br>再読み込みしてください。</p>';
+        }
+    };
+
+    function updateZip() {
+        const val = document.getElementById('addressSelect').value;
+        const out = document.getElementById('zipOutput');
+        out.textContent = val ? "〒" + val.slice(0, 3) + "-" + val.slice(3) : "〒--- ----";
+    }
+
+    function copyZip() {
+        const zip = document.getElementById('zipOutput').textContent.replace('〒', '');
+        if (zip.includes('-')) {
+            navigator.clipboard.writeText(zip).then(() => {
+                const toast = document.getElementById('toast');
+                toast.style.display = 'block';
+                setTimeout(() => { toast.style.display = 'none'; }, 2000);
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
