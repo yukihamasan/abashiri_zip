@@ -90,11 +90,15 @@
         const loader = document.getElementById('loader');
         const ui = document.getElementById('ui');
 
-        // 【重要】網走市に実在する正確な町名と読みのリスト
+        // 【調整ポイント】読み仮名を微調整して、南が先に来るようにします
         const abashiriTowns = {
             '相生町': 'あいおい', '青葉町': 'あおば', '旭町': 'あさひ', '卯原内': 'うばらない', '大曲': 'おおまがり',
-            '海岸町': 'かいがん', '嘉多山': 'かたやま', '桂町': 'かつら', '北': 'きた', '清正': 'きよまさ',
-            '越歳': 'こしえ', '寿町': 'ことぶき', '駒場北': 'こまばきた','駒場南': 'こまばみなみ', '向陽ヶ丘': 'こうようがおか', '栄町': 'さかえ',
+            '海岸町': 'かいがん', '嘉多山': 'かたやま', '桂町': 'かつら', '清正': 'きよまさ',
+            '越歳': 'こしえ', '寿町': 'ことぶき', 
+            '駒場南': 'こまば0', // 南を「0」にして北より先に
+            '駒場北': 'こまば1', // 北を「1」にして南より後に
+            '駒場': 'こまば2',
+            '向陽ヶ丘': 'こうようがおか', '栄町': 'さかえ',
             '桜町': 'さくら', '三眺': 'さんちょう', '潮見': 'しおみ', '昭和': 'しょうわ', '新町': 'しんまち',
             '末広町': 'すえひろ', '住吉': 'すみよし', '台町': 'だいちょう', '大正': 'たいしょう', '高野': 'たかの',
             'つくしヶ丘': 'つくしがおか', '天都山': 'てんとざん', '豊里': 'とよさと', '中園': 'なかぞの', '能取': 'のとろ',
@@ -110,23 +114,23 @@
             const data = await response.json();
             let allTowns = data.response.location;
 
-            // 1. 網走市に実在する町名だけを抽出（大空町などの混入を防ぐ）
             let filtered = allTowns.filter(t => {
                 return Object.keys(abashiriTowns).some(key => t.town.startsWith(key));
             });
 
-            // 2. 読み仮名と数字（条数）で正しく並べ替え
             filtered.sort((a, b) => {
                 const getSortKey = (name) => {
                     let key = name;
-                    // 町名の漢字部分を読みに変換
+                    // 特殊な並び替え（駒場南・北）を優先適用
+                    if (name.includes('駒場南')) return 'こまば0';
+                    if (name.includes('駒場北')) return 'こまば1';
+
                     for (let kanji in abashiriTowns) {
                         if (name.startsWith(kanji)) {
                             key = key.replace(kanji, abashiriTowns[kanji]);
                             break;
                         }
                     }
-                    // 漢数字を数字に変換（南二条 → みなみ2）
                     for (let kn in kanjiNum) {
                         key = key.replace(new RegExp(kn, 'g'), kanjiNum[kn]);
                     }
