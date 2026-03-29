@@ -90,73 +90,69 @@
         const loader = document.getElementById('loader');
         const ui = document.getElementById('ui');
 
-        // 網走市の正確な町名リスト
+        // 1. 表示する実在町名リスト
         const abashiriValidTowns = [
-            '稲富', '卯原内', '浦士別', '大曲', '音根内',
-            '海岸町', '嘉多山', '桂町', '北浜', '清浦', '越歳', 
-            '駒場北', '駒場南', '向陽ケ丘', '栄', '三眺', '潮見', '昭和', '新町', 
-            '台町', 'つくしケ丘', '天都山', '豊郷', '中園', '錦町', 
-            '能取', '能取港町', '東網走', '二ツ岩', '二見ヶ岡', '文化', 
-            '平和', '鱒浦', '丸万', '実豊', '美岬', '緑町', 
-            '港町', '南', '明治', '藻琴', '八坂', '山里', '呼人', '北'
+            '稲富', '卯原内', '浦士別', '大曲', '音根内', '海岸町', '嘉多山', '桂町', '北浜', '清浦', 
+            '越歳', '駒場北', '駒場南', '向陽ケ丘', '栄', '三眺', '潮見', '昭和', '新町', '台町', 
+            'つくしケ丘', '天都山', '豊郷', '中園', '錦町', '能取', '能取港町', '東網走', '二ツ岩', 
+            '二見ヶ岡', '文化', '平和', '鱒浦', '丸万', '実豊', '美岬', '緑町', '港町', '南', 
+            '明治', '藻琴', '八坂', '山里', '呼人', '北'
         ];
 
-        // 条数（北・南、一〜十二条、東・西）をリストに追加
-        const directions = ['北', '南'];
-        const sides = ['東', '西'];
+        // 2. 条数をリストに追加
+        const directions = ['北', '南'], sides = ['東', '西'];
         for (let d of directions) {
             for (let s of sides) {
                 for (let i = 1; i <= 12; i++) {
-                    const kanji = i === 11 ? '十一' : i === 12 ? '十二' : 
-                                 ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'][i];
+                    const kanji = i === 11 ? '十一' : i === 12 ? '十二' : ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'][i];
                     abashiriValidTowns.push(`${d}${kanji}条${s}`);
                 }
             }
         }
 
-        // ソート用の読み仮名・優先度マップ
-        const kanaMap = { 
-            '卯原内': 'うばらない', 
-            '浦士別': 'うらしべつ', 
-            '桂町': 'かつら0', // 桂町の次に北を置くための基準
-            '北': 'かつら1',   // 桂町の直後に移動
-            '駒場北': 'こまば0', 
-            '駒場南': 'こまば1', 
-            '向陽ケ丘': 'こうようがおか', 
-            '実豊': 'み0',      // 美岬より先にするための数値
-            '美岬': 'み1',      // 実豊より後にするための数値
-            '東網走': 'ひがしあばしり', 
-            '南': 'みなみ' 
+        // 3. 全ての町名に「正しい読み（かな）」を割り振る（ここが並び順の肝です）
+        const readingMap = {
+            '稲富': 'いなとみ', '卯原内': 'うばらない', '浦士別': 'うらしべつ', '大曲': 'おおまがり', '音根内': 'おんねない',
+            '海岸町': 'かいがん', '嘉多山': 'かたやま', '桂町': 'かつらまち0', // 桂町を北の直前に
+            '北': 'かつらまち1', // 北を桂町の直後に
+            '北浜': 'きたはま', '清浦': 'きようら', '越歳': 'こしえ', 
+            '駒場北': 'こまば0', '駒場南': 'こまば1', '向陽ケ丘': 'こうようがおか', '栄': 'さかえ',
+            '三眺': 'さんちょう', '潮見': 'しおみ', '昭和': 'しょうわ', '新町': 'しんまち', '台町': 'だいちょう',
+            'つくしケ丘': 'つくしがおか', '天都山': 'てんとざん', '豊郷': 'とよさと', '中園': 'なかぞの', '錦町': 'にしきまち',
+            '能取': 'のとろ', '能取港町': 'のとろみなと', '東網走': 'ひがしあばしり', '二ツ岩': 'ふたついわ',
+            '二見ヶ岡': 'ふたみがおか', '文化': 'ぶんか', '平和': 'へいわ', '鱒浦': 'ますうら', '丸万': 'まるまん',
+            '実豊': 'みとよ0', // 実豊を美岬の直前に
+            '美岬': 'みさき1', // 美岬を実豊の直後に
+            '緑町': 'みどりまち', '港町': 'みなとまち', '南': 'みなみ', '明治': 'めいじ', '藻琴': 'もこと',
+            '八坂': 'やさか', '山里': 'やまざり', '呼人': 'よびと'
         };
+
         const kanjiNumMap = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10, '十一': 11, '十二': 12 };
 
         try {
             const response = await fetch('https://geoapi.heartrails.com/api/json?method=getTowns&city=%E7%B6%B2%E8%B5%B0%E5%B8%82');
             const data = await response.json();
-            let allData = data.response.location;
-
-            // 「東」を「東網走」として扱う
-            allData = allData.map(item => {
+            let allData = data.response.location.map(item => {
                 if (item.town === '東') item.town = '東網走';
                 return item;
             });
 
-            // 完全一致するものだけを抽出
             let filtered = allData.filter(item => abashiriValidTowns.includes(item.town));
 
             filtered.sort((a, b) => {
                 const getSortKey = (name) => {
-                    // 特定の優先順位を直接判定
-                    if (name === '桂町') return 'かつら0';
-                    if (name === '北') return 'かつら1';
-                    if (name === '実豊') return 'み0';
-                    if (name === '美岬') return 'み1';
-                    if (name.includes('駒場北')) return 'こまば0';
-                    if (name.includes('駒場南')) return 'こまば1';
-                    
                     let key = name;
-                    for (let k in kanaMap) { if (name.startsWith(k)) { key = key.replace(k, kanaMap[k]); break; } }
-                    for (let kn in kanjiNumMap) { key = key.replace(new RegExp(kn, 'g'), kanjiNumMap[kn]); }
+                    // 辞書にある読みを最優先で適用
+                    for (let target in readingMap) {
+                        if (name.startsWith(target)) {
+                            key = key.replace(target, readingMap[target]);
+                            break;
+                        }
+                    }
+                    // 漢数字を数字に変換
+                    for (let kn in kanjiNumMap) {
+                        key = key.replace(new RegExp(kn, 'g'), kanjiNumMap[kn]);
+                    }
                     return key;
                 };
                 return getSortKey(a.town).localeCompare(getSortKey(b.town), 'ja', { numeric: true });
@@ -173,7 +169,7 @@
             loader.style.display = 'none';
             ui.style.display = 'block';
         } catch (error) {
-            loader.innerHTML = '<p style="color:red;">データの読み込みに失敗しました。</p>';
+            loader.innerHTML = '<p style="color:red;">通信エラー</p>';
         }
     };
 
