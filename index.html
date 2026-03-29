@@ -122,8 +122,8 @@
                 const getSortKey = (name) => {
                     let key = name;
                     // 特殊な並び替え（駒場南・北）を優先適用
-                    if (name.includes('駒場南')) return 'こまば0';
-                    if (name.includes('駒場北')) return 'こまば1';
+                    if (name.includes('駒場北')) return 'こまば0';
+                    if (name.includes('駒場南')) return 'こまば1';
 
                     for (let kanji in abashiriTowns) {
                         if (name.startsWith(kanji)) {
